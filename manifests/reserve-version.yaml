@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reserve-version-deployment
+  labels:
+    app: reserve-version
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reserve-version
+  template:
+    metadata:
+      labels:
+        app: reserve-version
+    spec:
+      hostAliases:
+        - ip: "####"
+          hostnames: 
+            - "####"
+      containers:
+        - name: reserve-version
+          image: someRepo/reserve-version:v1.0.5
+          imagePullPolicy: IfNotPresent
+          command: ["/app/reserve-version"]
+          args: ["-cfg=/data/app_configs/config-data.yaml"]
+          ports:
+          - containerPort: 8080
+          volumeMounts:
+            - name: secret-volume
+              mountPath: /data/app_configs
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: secret-volume
+          secret:
+            secretName: config-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reserve-version-service
+spec:
+  selector:
+    app: reserve-version
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 8080
